@@ -1,0 +1,39 @@
+{
+  "generated_at": "2026-02-09T23:42:54.733234Z",
+  "users": {
+    "8535312741": {
+      "tier": "free",
+      "status": "onboarded",
+      "wallets": [
+        {
+          "address": "\u270f edit label",
+          "label": "\ud83d\udcc4 My Wallets"
+        },
+        {
+          "address": "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
+          "label": "1"
+        },
+        {
+          "address": "0x28c6c06298d514db089934071355e5743bf21d60",
+          "label": "2"
+        },
+        {
+          "address": "0x503828976d22510aad0201ac7ec88293211d23da",
+          "label": "3"
+        },
+        {
+          "address": "0x267be1c1d684f78cb4f6a176c4911b741e4ffdc0",
+          "label": null
+        },
+        {
+          "address": "0x742d35cc6634c0532925a3b844bc454e4438f44e",
+          "label": null
+        },
+        {
+          "address": "0x1111111111111111111111111111111111111111",
+          "label": "manual"
+        }
+      ]
+    }
+  }
+}
