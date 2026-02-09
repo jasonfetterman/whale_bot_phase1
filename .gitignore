@@ -1,23 +1,35 @@
-# Env / secrets
-.env
-.env.*
-*.env
+# FILE: .gitignore
+# LOCATION: project root (whale_bot_phase1/.gitignore)
 
-# Python
+# --- Python ---
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-
-# Virtualenv
 .venv/
 venv/
 
-# Databases / local state
+# --- Environment ---
+.env
+
+# --- Databases ---
 *.db
 *.sqlite
-telegram_links.json
+*.sqlite3
 
-# OS
+# --- Generated web data (tracked manually only) ---
+# data/data.json is COMMITTED intentionally
+# everything else in data/ is ignored
+data/*
+!data/data.json
+
+# --- Logs ---
+*.log
+
+# --- OS ---
 .DS_Store
 Thumbs.db
+
+# --- Editor ---
+.vscode/
+.idea/
