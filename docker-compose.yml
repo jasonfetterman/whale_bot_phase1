@@ -1,0 +1,23 @@
+version: "3.9"
+
+services:
+  bot:
+    build: .
+    container_name: whalerx-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./bot.db:/app/bot.db
+      - ./data:/app/data
+
+  listeners:
+    build: .
+    container_name: whalerx-listeners
+    restart: unless-stopped
+    env_file:
+      - .env
+    command: python bot/main.py
+    volumes:
+      - ./bot.db:/app/bot.db
+      - ./data:/app/data

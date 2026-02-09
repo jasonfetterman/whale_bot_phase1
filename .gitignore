@@ -1,0 +1,23 @@
+# Env / secrets
+.env
+.env.*
+*.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtualenv
+.venv/
+venv/
+
+# Databases / local state
+*.db
+*.sqlite
+telegram_links.json
+
+# OS
+.DS_Store
+Thumbs.db

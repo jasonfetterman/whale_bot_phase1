@@ -1,0 +1,18 @@
+{
+  "binance": {
+    "label": "Binance",
+    "addresses": []
+  },
+  "coinbase": {
+    "label": "Coinbase",
+    "addresses": []
+  },
+  "kraken": {
+    "label": "Kraken",
+    "addresses": []
+  },
+  "bridge": {
+    "label": "Bridge",
+    "addresses": []
+  }
+}

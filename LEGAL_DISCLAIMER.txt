@@ -1,0 +1,9 @@
+Whaler X provides on-chain transaction alerts and analytics for informational purposes only.
+
+Whaler X does NOT provide financial advice, investment advice, trading advice, or recommendations of any kind.
+
+All alerts are raw blockchain data or derived analytics and should not be interpreted as predictions or guidance.
+
+Cryptocurrency markets are volatile. You are solely responsible for your decisions and actions.
+
+By using Whaler X, you acknowledge and agree that the developers and operators are not liable for losses, damages, or outcomes of any kind.

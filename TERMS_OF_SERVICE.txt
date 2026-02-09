@@ -1,0 +1,24 @@
+Terms of Service — Whaler X
+
+1. Service Description
+Whaler X delivers automated blockchain transaction alerts via Telegram.
+
+2. No Financial Advice
+The service is strictly informational. No financial advice is provided.
+
+3. Subscriptions
+Paid plans grant access to enhanced alert speed and analytics.
+All payments are handled by Stripe.
+
+4. Cancellations & Refunds
+Users may cancel subscriptions at any time via Stripe.
+Refunds are handled according to Stripe policy.
+
+5. Abuse
+Abuse, scraping, resale, or redistribution of alerts is prohibited.
+
+6. Availability
+Service availability is not guaranteed. Downtime may occur.
+
+7. Liability
+Whaler X is provided "as-is" without warranties of any kind.

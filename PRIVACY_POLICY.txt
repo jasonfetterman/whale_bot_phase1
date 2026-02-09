@@ -1,0 +1,16 @@
+Privacy Policy — Whaler X
+
+Whaler X collects:
+• Telegram user ID
+• Subscription tier
+• Alert configuration settings
+
+Whaler X does NOT collect:
+• Wallet private keys
+• Personal identity information
+• Payment card data (handled by Stripe)
+
+Data is used solely to operate the service.
+Data is not sold or shared with third parties.
+
+Users may request deletion of their data at any time.
