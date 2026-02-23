@@ -1,48 +1,72 @@
-🐋 WhalerX Telegram Bot
+🐋 WhalerX — Crypto Whale Tracking Telegram Bot (Phase 1)
 
-WhalerX is a real-time crypto whale tracking Telegram bot that monitors large on-chain transactions and sends instant alerts.
-It supports paid subscription tiers, automatic plan enforcement, and seamless linking with a web app for billing and account management.
+WhalerX is a real-time crypto whale tracking Telegram bot built to monitor large on-chain Ethereum transactions and deliver instant alerts to subscribed users.
 
-This repository contains the Telegram bot only.
-Payments, authentication, and plan management are handled by a separate web app.
+This repository contains the Telegram bot service only.
 
-✨ Features
+Payments, authentication, subscription management, and plan upgrades are handled by a separate Next.js web application.
 
-📡 Real-time whale alerts (Ethereum + supported chains)
+🚀 Core Features
+📡 Real-Time Whale Monitoring
 
-👛 Track multiple wallets with optional labels
+Ethereum mainnet monitoring via Alchemy WebSocket
 
-🔔 Enable / disable alerts per wallet
+Large transaction detection
 
-⛓ Select which chains to monitor per wallet
+Instant Telegram delivery
 
-📄 View all tracked wallets in Telegram
+👛 Wallet Management
 
-💳 Subscription tiers (Free / Pro / Elite / Super Elite)
+Add / remove tracked wallets
 
-🚫 Hard wallet limits enforced by plan
+Optional wallet labels
 
-🔐 Telegram ↔ Web account linking
+View all tracked wallets inside Telegram
 
-👑 Owner override (always Super Elite)
+Enable / disable alerts per wallet
 
-🧱 Architecture Overview
-Telegram Bot (aiogram)
+Chain selection per wallet (Phase 1: Ethereum)
+
+💳 Subscription System
+
+Free / Pro / Elite / Super Elite tiers
+
+Hard wallet limits enforced inside bot
+
+Plan retrieved dynamically from web app
+
+Automatic plan enforcement
+
+Owner override (always Super Elite)
+
+🔐 Account Linking
+
+Telegram ↔ Web account linking via one-time code
+
+Maps:
+
+telegram_id ↔ clerk_user_id
+
+Plan data fetched from web backend
+
+🧱 System Architecture
+Telegram Bot (Python / aiogram v3)
 │
-├── Wallet management
-├── Alert delivery
+├── Wallet storage (SQLite / aiosqlite)
+├── Whale alert delivery
 ├── Plan enforcement
-├── Telegram account linking
+├── Telegram ↔ Web linking
 │
-└── Web App (Next.js)
+└── Web App (Next.js - Separate Repository)
     ├── Authentication (Clerk)
     ├── Subscriptions (Stripe)
-    ├── Plan storage (Clerk metadata)
-    └── API used by bot for plan checks
+    ├── Plan metadata storage
+    └── API endpoints for bot plan verification
+Important:
 
+The bot does NOT process payments.
 
-The bot never handles payments directly.
-It queries the web app to determine each user’s plan.
+It only queries the web app API to determine a user's active plan.
 
 🛠 Tech Stack
 
@@ -50,91 +74,89 @@ Python 3.11+
 
 aiogram v3
 
-SQLite / aiosqlite
+SQLite (aiosqlite)
 
 Alchemy WebSocket API
 
-Stripe (subscriptions)
+aiohttp (API communication)
 
-Clerk (user & plan management)
+Stripe (web app)
 
-Next.js web app (separate repo)
+Clerk (web app authentication)
 
-🚀 Getting Started
-1️⃣ Clone the repository
-git clone https://github.com/yourusername/whale_bot_phase1.git
+Next.js (separate repository)
+
+⚙️ Local Setup
+1️⃣ Clone Repository
+git clone https://github.com/jasonfetterman/whale_bot_phase1.git
 cd whale_bot_phase1
-
-2️⃣ Create & activate virtual environment
+2️⃣ Create Virtual Environment (Windows PowerShell)
 python -m venv .venv
 .\.venv\Scripts\activate
-
-3️⃣ Install dependencies
+3️⃣ Install Dependencies
 pip install aiogram aiosqlite python-dotenv pydantic-settings stripe websockets aiohttp
+🔑 Environment Variables
 
-⚙️ Configuration
-
-Create a .env file in the project root (this file is not committed):
+Create a .env file in the root directory:
 
 BOT_TOKEN=your_telegram_bot_token
 ALCHEMY_KEY=your_alchemy_api_key
-OWNER_TG_ID=your_telegram_numeric_id
+OWNER_TG_ID=your_numeric_telegram_id
 WEB_APP_BASE_URL=http://localhost:3000
 
-▶️ Running the Bot
+⚠️ Never commit this file.
 
-From the project root:
-
+▶️ Run the Bot
 .\.venv\Scripts\python.exe bot\main.py
 
+You should see polling start without errors.
 
-You should see the bot start polling with no errors.
-
-🔐 Subscription Plans (Example)
+💎 Subscription Tiers
 Plan	Wallet Limit
 Free	1 wallet
 Pro	10 wallets
 Elite	50 wallets
 Super Elite	Unlimited
 
-Plans are enforced inside the bot based on data fetched from the web app.
+Limits are enforced inside the bot using plan data fetched from the web application.
 
-🔗 Telegram ↔ Web Linking
+Owner account is automatically treated as Super Elite.
 
-User generates a link code in the web app
+🧪 Phase 1 Scope
 
-User sends the code to the Telegram bot
+Ethereum whale monitoring
 
-Bot links:
+Multi-wallet tracking
 
-telegram_id ↔ clerk_user_id
+Plan enforcement
 
+Telegram ↔ Web linking
 
-Bot automatically enforces the correct plan
+Local SQLite persistence
 
-🧪 Development Notes
+This repo does NOT include:
 
-Owner account is always treated as super_elite
+Web dashboard
 
-SQLite is used for local persistence
+Stripe webhooks
 
-Webhooks & Stripe logic live in the web app, not here
-
-This repo is safe to publish (no secrets committed)
+Clerk backend logic
 
 📌 Roadmap
 
- Additional chains
+Multi-chain expansion
 
- Alert thresholds per wallet
+Custom alert thresholds per wallet
 
- Usage analytics
+Usage analytics
 
- Admin dashboards
+Admin tools
 
- Bot performance optimizations
+Performance optimizations
+
+Docker deployment
 
 ⚠️ Disclaimer
 
 This project is for educational and informational purposes only.
-It does not provide financial advice.
+It does not provide financial advice or investment recommendations.
