@@ -1,116 +1,247 @@
-🐋 WhalerX — Crypto Whale Tracking Telegram Bot (Phase 1)
+🐋 WhalerX
+Real-Time Crypto Whale Tracking Infrastructure
 
-WhalerX is a real-time crypto whale tracking Telegram bot built to monitor large on-chain Ethereum transactions and deliver instant alerts to subscribed users.
+Phase 1 — Telegram Monitoring Engine
 
-This repository contains the Telegram bot service only.
 
-Payments, authentication, subscription management, and plan upgrades are handled by a separate Next.js web application.
 
-🚀 Core Features
-📡 Real-Time Whale Monitoring
 
-Ethereum mainnet monitoring via Alchemy WebSocket
 
-Large transaction detection
 
-Instant Telegram delivery
 
-👛 Wallet Management
 
-Add / remove tracked wallets
+
+
+
+
+🌊 Overview
+
+WhalerX is a real-time crypto whale monitoring infrastructure service designed to track large on-chain Ethereum transactions and deliver instant alerts to Telegram users.
+
+This repository contains the Telegram monitoring engine only.
+
+Authentication, billing, subscription management, and account dashboards are handled by a separate web application built with Next.js.
+
+WhalerX is architected as a scalable, event-driven, async monitoring system.
+
+🎯 Product Vision
+
+WhalerX is built to become:
+
+A multi-chain whale intelligence platform
+
+A scalable SaaS subscription service
+
+A real-time blockchain alerting engine
+
+A modular backend capable of supporting web, mobile, and API clients
+
+Phase 1 focuses on:
+
+Ethereum monitoring
+
+Subscription enforcement
+
+Telegram delivery
+
+🚀 Core Capabilities
+📡 Real-Time Blockchain Monitoring
+
+Ethereum mainnet WebSocket streaming via Alchemy
+
+Event-driven async architecture
+
+Large transaction detection logic
+
+Immediate Telegram alert dispatch
+
+👛 Wallet Intelligence System
+
+Add tracked wallets
+
+Remove tracked wallets
 
 Optional wallet labels
 
-View all tracked wallets inside Telegram
+View tracked wallets inside Telegram
 
 Enable / disable alerts per wallet
 
-Chain selection per wallet (Phase 1: Ethereum)
+Per-wallet chain selection (Ethereum in Phase 1)
 
-💳 Subscription System
+💳 Subscription Enforcement Engine
 
 Free / Pro / Elite / Super Elite tiers
 
 Hard wallet limits enforced inside bot
 
-Plan retrieved dynamically from web app
+Dynamic plan validation from backend API
 
-Automatic plan enforcement
+Automatic upgrade / downgrade handling
 
 Owner override (always Super Elite)
 
-🔐 Account Linking
+🔐 Secure Telegram ↔ Web Linking
 
-Telegram ↔ Web account linking via one-time code
+One-time code generated in web dashboard
 
-Maps:
+User submits code inside Telegram
+
+Bot maps:
 
 telegram_id ↔ clerk_user_id
 
-Plan data fetched from web backend
+Plan fetched before sensitive actions
 
-🧱 System Architecture
+The bot never processes payments directly.
+
+🧱 High-Level Architecture
+
 Telegram Bot (Python / aiogram v3)
 │
-├── Wallet storage (SQLite / aiosqlite)
-├── Whale alert delivery
-├── Plan enforcement
-├── Telegram ↔ Web linking
+├── Async Event Loop
+├── Whale Monitoring Service
+├── Wallet Management Service
+├── Plan Enforcement Layer
+├── Telegram Delivery Router
+├── SQLite Persistence Layer
 │
-└── Web App (Next.js - Separate Repository)
+└── Web Application (Separate Repository)
     ├── Authentication (Clerk)
-    ├── Subscriptions (Stripe)
-    ├── Plan metadata storage
-    └── API endpoints for bot plan verification
-Important:
+    ├── Stripe Subscriptions
+    ├── Plan Metadata Storage
+    └── REST API for Bot Plan Verification
 
-The bot does NOT process payments.
+🔁 Plan Verification Flow
 
-It only queries the web app API to determine a user's active plan.
+User attempts wallet action
 
-🛠 Tech Stack
+Bot queries Web App API
+
+Web App returns active subscription tier
+
+Bot checks wallet count
+
+Bot allows or denies action
+
+Owner ID automatically bypasses restrictions
+
+🧠 Architectural Principles
+
+Async-first design
+
+Separation of concerns
+
+Stateless alert logic
+
+Externalized payment handling
+
+Secure environment variable management
+
+Backend-verified subscription enforcement
+
+🛠 Technology Stack
+Bot Layer
 
 Python 3.11+
 
 aiogram v3
 
-SQLite (aiosqlite)
+aiosqlite
+
+aiohttp
+
+websockets
+
+pydantic-settings
+
+Blockchain Layer
 
 Alchemy WebSocket API
 
-aiohttp (API communication)
+Web Infrastructure (Separate Repo)
 
-Stripe (web app)
+Next.js
 
-Clerk (web app authentication)
+Clerk Authentication
 
-Next.js (separate repository)
+Stripe Billing
 
-⚙️ Local Setup
+REST API
+
+📂 Project Structure
+whale_bot_phase1/
+│
+├── bot/
+│   ├── main.py
+│   ├── routers/
+│   ├── services/
+│   ├── database/
+│   ├── models/
+│   └── utils/
+│
+├── .env                # Not committed
+├── requirements.txt
+├── Dockerfile          # (Optional - see below)
+└── README.md
+⚙️ Local Development Setup (Windows PowerShell)
 1️⃣ Clone Repository
 git clone https://github.com/jasonfetterman/whale_bot_phase1.git
 cd whale_bot_phase1
-2️⃣ Create Virtual Environment (Windows PowerShell)
+2️⃣ Create Virtual Environment
 python -m venv .venv
 .\.venv\Scripts\activate
 3️⃣ Install Dependencies
+pip install -r requirements.txt
+
+If requirements.txt does not exist:
+
 pip install aiogram aiosqlite python-dotenv pydantic-settings stripe websockets aiohttp
 🔑 Environment Variables
 
-Create a .env file in the root directory:
+Create a .env file:
 
 BOT_TOKEN=your_telegram_bot_token
 ALCHEMY_KEY=your_alchemy_api_key
 OWNER_TG_ID=your_numeric_telegram_id
 WEB_APP_BASE_URL=http://localhost:3000
 
-⚠️ Never commit this file.
+Never commit this file.
 
 ▶️ Run the Bot
 .\.venv\Scripts\python.exe bot\main.py
 
-You should see polling start without errors.
+Expected behavior:
 
+Bot connects
+
+WebSocket initializes
+
+Polling begins
+
+No runtime errors
+
+🐳 Docker Deployment (Production Ready)
+
+Create Dockerfile:
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY . .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+CMD ["python", "bot/main.py"]
+
+Build:
+
+docker build -t whalerx-bot .
+
+Run:
+
+docker run --env-file .env whalerx-bot
 💎 Subscription Tiers
 Plan	Wallet Limit
 Free	1 wallet
@@ -118,45 +249,97 @@ Pro	10 wallets
 Elite	50 wallets
 Super Elite	Unlimited
 
-Limits are enforced inside the bot using plan data fetched from the web application.
+Limits are enforced server-side via backend plan verification.
 
-Owner account is automatically treated as Super Elite.
+📊 Performance Considerations
 
-🧪 Phase 1 Scope
+Async architecture prevents blocking
 
-Ethereum whale monitoring
+WebSocket streaming minimizes latency
 
-Multi-wallet tracking
+SQLite suitable for early-stage deployment
 
-Plan enforcement
+Designed for migration to PostgreSQL in future phases
 
-Telegram ↔ Web linking
+Stateless alert handling allows horizontal scaling
 
-Local SQLite persistence
+🔒 Security Model
 
-This repo does NOT include:
+No private keys stored
 
-Web dashboard
+No transaction signing
 
-Stripe webhooks
+No payment handling
 
-Clerk backend logic
+No secrets committed
 
-📌 Roadmap
+All configuration via environment variables
 
-Multi-chain expansion
+Plan verification handled via backend API
 
-Custom alert thresholds per wallet
+🛣 Roadmap
 
-Usage analytics
+Phase 2:
 
-Admin tools
+Multi-chain support (Base, Arbitrum, BSC)
 
-Performance optimizations
+Custom transaction thresholds
 
-Docker deployment
+Advanced filtering
+
+Alert categorization
+
+Phase 3:
+
+Web dashboard alert management
+
+Historical whale analytics
+
+Admin monitoring tools
+
+Usage metrics & billing analytics
+
+Phase 4:
+
+Horizontal scaling
+
+Distributed monitoring workers
+
+Queue-based alert processing
+
+Dedicated alert API
+
+📸 Screenshots (Recommended Addition)
+
+Add screenshots of:
+
+Telegram alert example
+
+Wallet list interface
+
+Linking confirmation message
+
+Create /assets/ folder and include images.
+
+🤝 Contributing
+
+Contributions are welcome.
+
+Fork the repository
+
+Create feature branch
+
+Submit pull request
+
+Ensure no secrets are committed
+
+📜 License
+
+MIT License
 
 ⚠️ Disclaimer
 
-This project is for educational and informational purposes only.
+This software is provided for educational and informational purposes only.
 It does not provide financial advice or investment recommendations.
+
+Use at your own risk.
