@@ -1,5 +1,10 @@
+# FILE: services/behavior.py
+# LOCATION: services/behavior.py
+# DROP-IN REPLACEMENT
+
 import time
 from collections import defaultdict
+from services.plan_guard import can_generate_feature
 
 # Sliding window (seconds)
 WINDOW = 60 * 30  # 30 minutes
@@ -22,10 +27,15 @@ def _prune(now: float):
                 store.pop(addr, None)
 
 
-def record_tx(from_addr: str, to_addr: str) -> str | None:
-    """
-    Track behavior and return label if pattern detected.
-    """
+async def record_tx(
+    user_id: int,
+    from_addr: str,
+    to_addr: str,
+) -> str | None:
+    # HARD GATE
+    if not await can_generate_feature(user_id, "BEHAVIOR"):
+        return None
+
     now = time.time()
     _prune(now)
 
@@ -35,11 +45,9 @@ def record_tx(from_addr: str, to_addr: str) -> str | None:
     _outgoing[from_addr].append(now)
     _incoming[to_addr].append(now)
 
-    # Accumulation: many incoming txs
     if len(_incoming[to_addr]) >= ACCUMULATION_TX_COUNT:
         return "🟢 Accumulation Pattern Detected"
 
-    # Distribution: many outgoing txs
     if len(_outgoing[from_addr]) >= DISTRIBUTION_TX_COUNT:
         return "🔴 Distribution Pattern Detected"
 

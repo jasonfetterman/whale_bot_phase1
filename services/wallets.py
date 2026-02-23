@@ -1,18 +1,34 @@
+# FILE: services/wallets.py
+# LOCATION: services/wallets.py
+# DROP-IN REPLACEMENT
+
 from db.engine import get_db
 from services.user_tiers import get_tier
+from services.metrics import inc_wallet_adds
 import re
+import json
 
-
-TIER_LIMITS = {
+TIER_WALLET_LIMITS = {
     "free": 1,
     "pro": 5,
     "elite": 20,
-    "super_elite": 100,
+    "super_elite": float("inf"),
 }
+
+TIER_CHAIN_LIMITS = {
+    "free": 1,
+    "pro": 2,
+    "elite": 3,
+    "super_elite": float("inf"),
+}
+
+PRESET_ALLOWED_TIERS = {"elite", "super_elite"}
 
 ALL_CHAINS = ["eth", "bsc", "polygon", "arbitrum", "base"]
 _ADDRESS_RE = re.compile(r"^0x[a-fA-F0-9]{40}$")
 
+
+# ─── schema ────────────────────────────────────────────────
 
 async def _ensure_columns():
     db = await get_db()
@@ -24,8 +40,22 @@ async def _ensure_columns():
         await db.execute("ALTER TABLE wallets ADD COLUMN chains TEXT")
     except Exception:
         pass
+
+    # presets table
+    await db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS wallet_presets (
+            chat_id INTEGER,
+            name TEXT,
+            wallets TEXT,
+            PRIMARY KEY (chat_id, name)
+        )
+        """
+    )
     await db.commit()
 
+
+# ─── helpers ────────────────────────────────────────────────
 
 def _normalize_address(address: str) -> str:
     return address.strip().lower()
@@ -36,9 +66,14 @@ def _validate_address(address: str):
         raise RuntimeError("INVALID_ADDRESS")
 
 
-async def _get_wallet_limit(chat_id: int) -> int:
+async def _get_wallet_limit(chat_id: int):
     tier = await get_tier(chat_id)
-    return TIER_LIMITS.get(tier, 1)
+    return TIER_WALLET_LIMITS.get(tier, 1)
+
+
+async def _get_chain_limit(chat_id: int):
+    tier = await get_tier(chat_id)
+    return TIER_CHAIN_LIMITS.get(tier, 1)
 
 
 async def _wallet_exists(chat_id: int, address: str) -> bool:
@@ -61,6 +96,8 @@ async def count_wallets(chat_id: int) -> int:
     return row["cnt"] if row else 0
 
 
+# ─── wallet ops ─────────────────────────────────────────────
+
 async def add_wallet(chat_id: int, address: str, label: str | None = None):
     await _ensure_columns()
     address = _normalize_address(address)
@@ -71,8 +108,12 @@ async def add_wallet(chat_id: int, address: str, label: str | None = None):
 
     current = await count_wallets(chat_id)
     limit = await _get_wallet_limit(chat_id)
-    if current >= limit:
+
+    if limit != float("inf") and current >= limit:
         raise RuntimeError("WALLET_LIMIT_REACHED")
+
+    chain_limit = await _get_chain_limit(chat_id)
+    chains = ALL_CHAINS if chain_limit == float("inf") else ALL_CHAINS[:chain_limit]
 
     db = await get_db()
     await db.execute(
@@ -80,9 +121,11 @@ async def add_wallet(chat_id: int, address: str, label: str | None = None):
         INSERT INTO wallets (chat_id, address, label, enabled, chains)
         VALUES (?, ?, ?, 1, ?)
         """,
-        (chat_id, address, label, ",".join(ALL_CHAINS)),
+        (chat_id, address, label, ",".join(chains)),
     )
     await db.commit()
+
+    inc_wallet_adds()
 
 
 async def remove_wallet(chat_id: int, address: str):
@@ -114,6 +157,10 @@ async def set_wallet_chains(chat_id: int, address: str, chains: list[str]):
     clean = [c for c in chains if c in ALL_CHAINS]
     if not clean:
         raise RuntimeError("EMPTY_CHAIN_SET")
+
+    limit = await _get_chain_limit(chat_id)
+    if limit != float("inf") and len(clean) > limit:
+        raise RuntimeError("CHAIN_LIMIT_REACHED")
 
     db = await get_db()
     await db.execute(
@@ -179,3 +226,61 @@ async def is_tracked(address: str, chain: str | None = None) -> bool:
         )
 
     return await cur.fetchone() is not None
+
+
+# ─── presets (elite+) ───────────────────────────────────────
+
+async def save_preset(chat_id: int, name: str):
+    await _ensure_columns()
+    tier = await get_tier(chat_id)
+    if tier not in PRESET_ALLOWED_TIERS:
+        return
+
+    wallets = await get_wallets(chat_id)
+    addresses = [w["address"] for w in wallets]
+
+    db = await get_db()
+    await db.execute(
+        """
+        INSERT INTO wallet_presets (chat_id, name, wallets)
+        VALUES (?, ?, ?)
+        ON CONFLICT(chat_id, name)
+        DO UPDATE SET wallets = excluded.wallets
+        """,
+        (chat_id, name.lower(), json.dumps(addresses)),
+    )
+    await db.commit()
+
+
+async def load_preset(chat_id: int, name: str):
+    await _ensure_columns()
+    tier = await get_tier(chat_id)
+    if tier not in PRESET_ALLOWED_TIERS:
+        return
+
+    db = await get_db()
+    cur = await db.execute(
+        "SELECT wallets FROM wallet_presets WHERE chat_id = ? AND name = ?",
+        (chat_id, name.lower()),
+    )
+    row = await cur.fetchone()
+    if not row:
+        return
+
+    addresses = json.loads(row["wallets"])
+    for addr in addresses:
+        try:
+            await add_wallet(chat_id, addr)
+        except Exception:
+            pass
+
+
+async def list_presets(chat_id: int) -> list[str]:
+    await _ensure_columns()
+    db = await get_db()
+    cur = await db.execute(
+        "SELECT name FROM wallet_presets WHERE chat_id = ?",
+        (chat_id,),
+    )
+    rows = await cur.fetchall()
+    return [r["name"] for r in rows]

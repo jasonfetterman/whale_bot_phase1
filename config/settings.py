@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     STRIPE_PRICE_ELITE: str
     STRIPE_PRICE_SUPER_ELITE: str
     STRIPE_WEBHOOK_SECRET: str
+    
+    WEBHOOK_BASE_URL: str
+    WEBHOOK_PORT: int = 3000
+
 
     class Config:
         env_file = ".env"

@@ -1,9 +1,14 @@
+# FILE: services/alerts.py
+# LOCATION: services/alerts.py
+# DROP-IN REPLACEMENT
+
 import time
 import asyncio
 from aiogram import Bot
 
 from services.user_tiers import get_tier
 from services.mute_windows import is_muted
+from services.metrics import inc_alerts
 from db.engine import get_db
 
 # ---- tier latency (seconds) ----
@@ -14,17 +19,19 @@ TIER_DELAY = {
     "super_elite": 0,
 }
 
-# ---- intelligence stripping ----
-INTEL_FILTERS = {
-    "free": {"SMART", "BEHAVIOR", "FLOW"},
-    "pro": {"BEHAVIOR", "FLOW"},
-    "elite": {"FLOW"},
-    "super_elite": set(),
+# ---- tier rate caps (alerts per hour) ----
+TIER_RATE_CAP = {
+    "free": 0,
+    "pro": 30,
+    "elite": 120,
+    "super_elite": float("inf"),
 }
 
-# ---- rate limiting ----
-_LAST_SENT: dict[int, float] = {}
-_MIN_INTERVAL = 3.0
+# ---- in-memory rate window ----
+_SENT_LOG: dict[int, list[float]] = {}
+_WINDOW = 60 * 60  # 1 hour
+
+# ---- dedupe ----
 _TTL = 60 * 60
 
 
@@ -49,7 +56,7 @@ async def _mark_seen(tx_hash: str):
     await db.commit()
 
 
-async def _cleanup():
+async def _cleanup_seen():
     cutoff = int(time.time()) - _TTL
     db = await get_db()
     await db.execute(
@@ -59,26 +66,27 @@ async def _cleanup():
     await db.commit()
 
 
-def _filter_intel(text: str, tier: str) -> str:
-    blocked = INTEL_FILTERS.get(tier, set())
-    if not blocked:
-        return text
+def _rate_allowed(chat_id: int, tier: str) -> bool:
+    limit = TIER_RATE_CAP.get(tier, 0)
+    if limit == float("inf"):
+        return True
 
-    out = []
-    for line in text.splitlines():
-        if any(b in line for b in blocked):
-            continue
-        out.append(line)
+    now = time.time()
+    bucket = _SENT_LOG.setdefault(chat_id, [])
+    bucket[:] = [t for t in bucket if now - t < _WINDOW]
 
-    return "\n".join(out)
+    if len(bucket) >= limit:
+        return False
+
+    bucket.append(now)
+    return True
 
 
 async def emit(bot: Bot, chat_id: int, text: str | None):
     if not text:
         return
 
-    await _cleanup()
-    now = time.time()
+    await _cleanup_seen()
 
     tx_hash = None
     for line in text.splitlines():
@@ -96,23 +104,20 @@ async def emit(bot: Bot, chat_id: int, text: str | None):
     if is_muted(chat_id):
         return
 
+    if not _rate_allowed(chat_id, tier):
+        return
+
     delay = TIER_DELAY.get(tier, 0)
     if delay:
         await asyncio.sleep(delay)
 
-    last = _LAST_SENT.get(chat_id, 0)
-    if now - last < _MIN_INTERVAL:
-        return
-
-    msg = _filter_intel(text, tier)
-
     await bot.send_message(
         chat_id=chat_id,
-        text=msg,
+        text=text,
         parse_mode=None,
     )
 
-    _LAST_SENT[chat_id] = time.time()
+    inc_alerts()  # 📊 metric — only after send
 
     if tx_hash:
         await _mark_seen(tx_hash)

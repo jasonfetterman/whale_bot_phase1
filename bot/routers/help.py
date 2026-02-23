@@ -4,6 +4,9 @@ from aiogram.filters import Command
 
 from bot.keyboards.main_menu import get_main_menu
 from services.typing import typing
+from services.wallets import get_wallets
+from services.referrals import get_or_create_code
+from services.referral_rewards import get_rewards
 
 router = Router()
 
@@ -13,11 +16,23 @@ def help_keyboard() -> ReplyKeyboardMarkup:
         keyboard=[
             [KeyboardButton(text="📘 How It Works")],
             [KeyboardButton(text="💎 Plans & Tiers")],
+            [KeyboardButton(text="🎁 Referrals")],
             [KeyboardButton(text="🧪 Troubleshooting")],
             [KeyboardButton(text="⬅ Back to Menu")],
         ],
         resize_keyboard=True,
     )
+
+
+async def maybe_nudge(message: Message):
+    wallets = await get_wallets(message.chat.id)
+    if not wallets:
+        await message.answer(
+            "👋 **Quick tip**\n\n"
+            "You haven’t added a wallet yet.\n"
+            "Add one to start receiving whale alerts 👛",
+            parse_mode="Markdown",
+        )
 
 
 # 🔒 FORCE ENTRY — COMMAND ALWAYS WINS
@@ -28,6 +43,7 @@ async def help_command(message: Message):
         "❓ Help Center\n\nChoose a topic below 👇",
         reply_markup=help_keyboard(),
     )
+    await maybe_nudge(message)
 
 
 # 🔒 FORCE ENTRY — EXACT TEXT
@@ -38,6 +54,7 @@ async def help_menu(message: Message):
         "❓ Help Center\n\nChoose a topic below 👇",
         reply_markup=help_keyboard(),
     )
+    await maybe_nudge(message)
 
 
 @router.message(lambda m: m.text == "📘 How It Works")
@@ -70,6 +87,26 @@ async def plans_and_tiers(message: Message):
         "👑 Super Elite\n"
         "• Instant alerts\n"
         "• Behavior + flow intel\n",
+        reply_markup=help_keyboard(),
+    )
+
+
+@router.message(lambda m: m.text == "🎁 Referrals")
+async def referrals_view(message: Message):
+    await typing(message.bot, message.chat.id)
+
+    user_id = message.from_user.id
+    code = await get_or_create_code(user_id)
+    rewards = await get_rewards(user_id)
+
+    await message.answer(
+        "🎁 **Your Referrals**\n\n"
+        f"Invite link:\n"
+        f"https://t.me/{message.bot.username}?start={code}\n\n"
+        f"👥 Referrals: **{rewards['referrals']}**\n"
+        f"💎 Reward credits: **{rewards['credits']}**\n\n"
+        "Rewards will unlock perks soon.",
+        parse_mode="Markdown",
         reply_markup=help_keyboard(),
     )
 

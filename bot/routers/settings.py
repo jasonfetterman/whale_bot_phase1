@@ -5,13 +5,14 @@ from config.settings import settings
 from bot.keyboards.main_menu import get_main_menu
 from services.typing import typing
 from services.thresholds import get_for_user, set_for_user
+from services.user_tiers import get_tier
 
 router = Router()
 
 
-def settings_keyboard(is_owner: bool) -> ReplyKeyboardMarkup:
+def settings_keyboard(can_adjust: bool) -> ReplyKeyboardMarkup:
     rows = []
-    if is_owner:
+    if can_adjust:
         rows.extend([
             [KeyboardButton(text="➕ ETH Threshold")],
             [KeyboardButton(text="➖ ETH Threshold")],
@@ -25,32 +26,46 @@ async def settings_menu(message: Message):
     await typing(message.bot, message.chat.id)
 
     user_id = message.from_user.id
-    is_owner = user_id == settings.OWNER_CHAT_ID
+    tier = await get_tier(user_id)
+
+    can_adjust = (
+        user_id == settings.OWNER_CHAT_ID
+        or tier == "super_elite"
+    )
+
     eth = await get_for_user("eth", user_id, settings.ETH_WHALE_THRESHOLD)
 
     await message.answer(
         "⚙ Settings\n\n"
         f"• ETH whale threshold: {eth} ETH\n\n"
         "Use buttons below to adjust.",
-        reply_markup=settings_keyboard(is_owner),
+        reply_markup=settings_keyboard(can_adjust),
     )
 
 
 @router.message(F.text == "➕ ETH Threshold")
 async def eth_up(message: Message):
-    if message.from_user.id != settings.OWNER_CHAT_ID:
+    user_id = message.from_user.id
+    tier = await get_tier(user_id)
+
+    if user_id != settings.OWNER_CHAT_ID and tier != "super_elite":
         return
-    current = await get_for_user("eth", message.from_user.id, settings.ETH_WHALE_THRESHOLD)
-    await set_for_user("eth", message.from_user.id, current + 10)
+
+    current = await get_for_user("eth", user_id, settings.ETH_WHALE_THRESHOLD)
+    await set_for_user("eth", user_id, current + 10)
     await settings_menu(message)
 
 
 @router.message(F.text == "➖ ETH Threshold")
 async def eth_down(message: Message):
-    if message.from_user.id != settings.OWNER_CHAT_ID:
+    user_id = message.from_user.id
+    tier = await get_tier(user_id)
+
+    if user_id != settings.OWNER_CHAT_ID and tier != "super_elite":
         return
-    current = await get_for_user("eth", message.from_user.id, settings.ETH_WHALE_THRESHOLD)
-    await set_for_user("eth", message.from_user.id, max(10, current - 10))
+
+    current = await get_for_user("eth", user_id, settings.ETH_WHALE_THRESHOLD)
+    await set_for_user("eth", user_id, max(10, current - 10))
     await settings_menu(message)
 
 

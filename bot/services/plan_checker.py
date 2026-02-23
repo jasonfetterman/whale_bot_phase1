@@ -1,60 +1,23 @@
-import os
-import json
-import aiohttp
+# FILE: services/plan_checker.py
+# LOCATION: services/plan_checker.py
+# DROP-IN REPLACEMENT
 
-OWNER_TG_ID = int(os.getenv("OWNER_TG_ID", "0"))
-WEB_APP_BASE_URL = os.getenv("WEB_APP_BASE_URL", "http://localhost:3000")
+from services.user_tiers import get_tier
 
-LINK_FILE = "telegram_links.json"
-
-
-def load_links():
-    if not os.path.exists(LINK_FILE):
-        return {}
-    with open(LINK_FILE, "r") as f:
-        return json.load(f)
+# Wallet limits per tier
+WALLET_LIMITS = {
+    "free": 1,
+    "pro": 10,
+    "elite": 50,
+    "super_elite": float("inf"),
+}
 
 
 async def get_user_plan(telegram_id: int) -> str:
-    # 👑 Owner override
-    if telegram_id == OWNER_TG_ID:
-        return "super_elite"
-
-    links = load_links()
-    link = links.get(str(telegram_id))
-
-    if not link:
-        return "free"
-
-    clerk_user_id = link.get("clerk_user_id")
-    if not clerk_user_id:
-        return "free"
-
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                f"{WEB_APP_BASE_URL}/api/telegram/plan",
-                json={"clerk_user_id": clerk_user_id},
-                timeout=5,
-            ) as resp:
-                if resp.status != 200:
-                    return "free"
-                data = await resp.json()
-                return data.get("plan", "free")
-    except Exception:
-        return "free"
+    return await get_tier(telegram_id)
 
 
 async def can_track_wallets(telegram_id: int, current_count: int) -> bool:
     plan = await get_user_plan(telegram_id)
-
-    if plan == "super_elite":
-        return True
-
-    if plan == "elite":
-        return current_count < 50
-
-    if plan == "pro":
-        return current_count < 10
-
-    return current_count < 1
+    limit = WALLET_LIMITS.get(plan, WALLET_LIMITS["free"])
+    return current_count < limit

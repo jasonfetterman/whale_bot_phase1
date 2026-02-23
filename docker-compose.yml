@@ -1,3 +1,7 @@
+# FILE: docker-compose.yml
+# LOCATION: project root
+# DROP-IN REPLACEMENT
+
 version: "3.9"
 
 services:
@@ -7,17 +11,20 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    command: python bot/main.py
     volumes:
       - ./bot.db:/app/bot.db
       - ./data:/app/data
 
-  listeners:
+  webhook:
     build: .
-    container_name: whalerx-listeners
+    container_name: whalerx-webhook
     restart: unless-stopped
     env_file:
       - .env
-    command: python bot/main.py
+    command: python bot/webhook_server.py
+    ports:
+      - "4242:4242"
     volumes:
       - ./bot.db:/app/bot.db
       - ./data:/app/data

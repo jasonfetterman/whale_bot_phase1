@@ -1,4 +1,5 @@
 import sys
+import asyncio
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -7,10 +8,9 @@ if str(ROOT) not in sys.path:
 
 import db.engine  # noqa: F401
 
-import asyncio
 from aiogram import Bot, Dispatcher
-
 from config.settings import settings
+
 from bot.routers.start import router as start_router
 from bot.routers.help import router as help_router
 from bot.routers.whale_alerts import router as whale_alerts_router
@@ -20,7 +20,7 @@ from bot.routers.upgrade import router as upgrade_router
 from bot.routers.admin import router as admin_router
 from bot.routers.restart import router as restart_router
 from bot.routers.wallets import router as wallets_router
-from bot.routers.link_account import router as link_router  # ✅ FIXED IMPORT
+from bot.routers.link_account import router as link_router
 
 from services.alchemy_ws import AlchemyWS
 from services.eth_confirmed import handle_block as handle_eth
@@ -54,6 +54,8 @@ async def main():
     )
     asyncio.create_task(eth_ws.run(on_eth_block))
 
+    # ---- POLLING MODE ----
+    await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 
 

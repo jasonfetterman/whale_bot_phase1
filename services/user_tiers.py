@@ -1,26 +1,29 @@
-import json
-from pathlib import Path
-
-DATA_FILE = Path("data/users.json")
-DATA_FILE.parent.mkdir(exist_ok=True)
+from db.engine import get_db
 
 
-def _load():
-    if not DATA_FILE.exists():
-        return {}
-    return json.loads(DATA_FILE.read_text())
+async def get_tier(chat_id: int) -> str:
+    db = await get_db()
+    cursor = await db.execute(
+        "SELECT tier FROM users WHERE chat_id = ?",
+        (chat_id,),
+    )
+    row = await cursor.fetchone()
+    await cursor.close()
+
+    if row is None:
+        return "free"
+
+    return row["tier"]
 
 
-def _save(data: dict):
-    DATA_FILE.write_text(json.dumps(data, indent=2))
-
-
-async def get_tier(user_id: int) -> str:
-    data = _load()
-    return data.get(str(user_id), "free")
-
-
-async def set_tier(user_id: int, tier: str):
-    data = _load()
-    data[str(user_id)] = tier
-    _save(data)
+async def set_tier(chat_id: int, tier: str):
+    db = await get_db()
+    await db.execute(
+        """
+        INSERT INTO users (chat_id, tier, status)
+        VALUES (?, ?, 'active')
+        ON CONFLICT(chat_id) DO UPDATE SET tier = excluded.tier
+        """,
+        (chat_id, tier),
+    )
+    await db.commit()

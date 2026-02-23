@@ -3,6 +3,8 @@ from aiogram.filters import Command
 from aiogram.types import Message
 
 from db.engine import get_db
+from services.user_tiers import get_tier
+from services.plan_checker import can_track_wallets
 
 router = Router()
 
@@ -27,6 +29,7 @@ async def confirm_command(message: Message):
 
     wallet_address = parts[1].lower()
     chat_id = message.chat.id
+    user_id = message.from_user.id
 
     # Basic ETH address sanity check
     if not wallet_address.startswith("0x") or len(wallet_address) != 42:
@@ -52,6 +55,25 @@ async def confirm_command(message: Message):
             parse_mode="Markdown",
         )
         return
+
+    # COUNT wallets
+    cur = await db.execute(
+        "SELECT COUNT(*) FROM wallets WHERE chat_id = ?",
+        (chat_id,),
+    )
+    row = await cur.fetchone()
+    wallet_count = row[0]
+
+    tier = await get_tier(user_id)
+
+    # ENFORCE LIMIT (Super Elite bypasses)
+    if tier != "super_elite":
+        allowed = await can_track_wallets(user_id, wallet_count)
+        if not allowed:
+            await message.answer(
+                "🚫 Wallet limit reached.\n\nUpgrade to unlock more wallets."
+            )
+            return
 
     # Insert new wallet
     await db.execute(
